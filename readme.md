@@ -7,7 +7,6 @@
 - Reverse `.cube` LUT files to create their inverse.
 - Automatically detect the LUT size from the input file or specify a custom size.
 - Generate a minimal `.cube` file with a standard header.
-- Includes a placeholder identity LUT for testing purposes.
 
 ## Requirements
 
