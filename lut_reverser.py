@@ -124,27 +124,31 @@ if __name__ == "__main__":
     output_filename = None
     output_cube_size = None
 
-    # Check if enough arguments are provided
-    if len(sys.argv) < 3:
-        print("Usage: python lut_reverser.py <input_lut_path> <output_lut_path> [cube_size]")
-        # Use default filenames if no arguments are given
-        print("Using default filenames: 'filename.cube' and 'filename_reversed.cube'")
-        input_filename = "filename.cube" # Default input
-        output_filename = "filename_reversed.cube" # Default output
-        # Cube size will be determined later from the input file (if possible)
+    # Check command line arguments
+    if len(sys.argv) == 1:
+        # No arguments provided, use defaults
+        input_filename = "filename.cube"
+        base, ext = os.path.splitext(input_filename)
+        output_filename = f"{base}_reversed{ext}"
+        print(f"No arguments provided. Using default filenames: '{input_filename}' and '{output_filename}'")
+    elif len(sys.argv) == 2:
+        # Only input file provided, auto-generate output filename
+        input_filename = sys.argv[1]
+        base, ext = os.path.splitext(input_filename)
+        output_filename = f"{base}_reversed{ext}"
+        print(f"Output filename not provided. Using: '{output_filename}'")
     else:
-        # Get input and output filenames from command line arguments
+        # Both input and output files provided
         input_filename = sys.argv[1]
         output_filename = sys.argv[2]
-        # Optionally get cube size from the third argument
+        # Check for optional cube size
         if len(sys.argv) > 3:
-             try:
-                 output_cube_size = int(sys.argv[3])
-                 print(f"Using specified cube size: {output_cube_size}")
-             except ValueError:
-                 print(f"Warning: Invalid cube size argument '{sys.argv[3]}'. Will attempt to read from input or use default.")
-                 output_cube_size = None # Ensure it's None if invalid
-        # If cube size wasn't provided or was invalid, it remains None here
+            try:
+                output_cube_size = int(sys.argv[3])
+                print(f"Using specified cube size: {output_cube_size}")
+            except ValueError:
+                print(f"Warning: Invalid cube size argument '{sys.argv[3]}'. Will attempt to read from input or use default.")
+                output_cube_size = None
 
     # --- Determine Paths ---
     script_dir = os.path.dirname(os.path.abspath(__file__))

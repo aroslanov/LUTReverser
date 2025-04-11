@@ -11,7 +11,7 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "args": ["1_SGamut3CineSLog3_To_LC-709.cube","1_SGamut3CineSLog3_To_LC-709_inverted.cube"]
+            "args": ["4_SGamut3CineSLog3_To_Cine+709.cube"]
             //"args": "${command:pickArgs}"
         }
     ]
