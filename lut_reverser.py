@@ -119,29 +119,37 @@ DOMAIN_MAX 1.0 1.0 1.0
         print(f"An error occurred during LUT reversal: {e}")
 
 if __name__ == "__main__":
-    default_cube_size = 33 # Default fallback size
+    def print_usage():
+        print("""
+Usage: python lut_reverser.py <input_lut> <output_lut> [cube_size]
+
+Arguments:
+    input_lut   - Path to the input .cube LUT file
+    output_lut  - Path to save the reversed .cube LUT file
+    cube_size   - (Optional) Resolution of the output LUT (default: 33)
+
+Example:
+    python lut_reverser.py input.cube output_reversed.cube 64
+""")
+
+    default_cube_size = 33
     input_filename = None
     output_filename = None
     output_cube_size = None
 
     # Check command line arguments
     if len(sys.argv) == 1:
-        # No arguments provided, use defaults
-        input_filename = "filename.cube"
-        base, ext = os.path.splitext(input_filename)
-        output_filename = f"{base}_reversed{ext}"
-        print(f"No arguments provided. Using default filenames: '{input_filename}' and '{output_filename}'")
+        print("Error: No input file specified.")
+        print_usage()
+        sys.exit(1)
     elif len(sys.argv) == 2:
-        # Only input file provided, auto-generate output filename
         input_filename = sys.argv[1]
         base, ext = os.path.splitext(input_filename)
         output_filename = f"{base}_reversed{ext}"
         print(f"Output filename not provided. Using: '{output_filename}'")
     else:
-        # Both input and output files provided
         input_filename = sys.argv[1]
         output_filename = sys.argv[2]
-        # Check for optional cube size
         if len(sys.argv) > 3:
             try:
                 output_cube_size = int(sys.argv[3])
@@ -161,7 +169,12 @@ if __name__ == "__main__":
         output_lut_path = os.path.join(script_dir, output_filename)
     else:
         output_lut_path = output_filename
-    # --- End Determine Paths ---
+
+    # Check if input file exists
+    if not os.path.exists(input_lut_path):
+        print(f"Error: Input LUT file not found: {input_lut_path}")
+        print_usage()
+        sys.exit(1)
 
     # --- Determine Cube Size ---
     if output_cube_size is None: # If not specified via command line
@@ -178,29 +191,6 @@ if __name__ == "__main__":
              output_cube_size = default_cube_size
              print(f"Input file not found yet. Using default cube size: {output_cube_size}")
     # --- End Determine Cube Size ---
-
-
-    # --- Placeholder Check ---
-    # In a real scenario, you would have the input file available.
-    # This check might need adjustment depending on whether you expect
-    # the script to create a dummy file when run with arguments.
-    # For now, we only create the dummy if using the *default* filename and it's missing.
-    if input_filename == "filename.cube" and not os.path.exists(input_lut_path):
-        print(f"Warning: Default input file '{input_filename}' not found. Creating a dummy identity LUT for demonstration.")
-        try:
-            identity_lut_content = """# Created by LUTReverser Placeholder
-TITLE "Identity 1D LUT"
-LUT_1D_SIZE 2
-0.0 0.0 0.0
-1.0 1.0 1.0
-"""
-            with open(input_lut_path, 'w') as f:
-                f.write(identity_lut_content)
-            print(f"Created dummy LUT: {input_lut_path}")
-        except Exception as e:
-            print(f"Error creating dummy LUT: {e}")
-            sys.exit(1) # Exit if we can't even create the dummy file
-    # --- End Placeholder Check ---
 
 
     # Reverse the LUT using the determined size

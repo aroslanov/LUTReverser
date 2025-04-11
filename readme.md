@@ -64,10 +64,6 @@ python lut_reverser.py <input_lut> <output_lut> [cube_size]
    python lut_reverser.py
    ```
 
-### Placeholder Identity LUT
-
-If the input LUT file is missing and the default filename (`filename.cube`) is used, the script will generate a placeholder identity LUT for demonstration purposes.
-
 ## How It Works
 
 1. **Input Validation**: The script checks if the input LUT file exists. If not, it creates a placeholder LUT if using the default filename.
