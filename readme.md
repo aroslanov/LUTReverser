@@ -51,17 +51,12 @@ python lut_reverser.py <input_lut> <output_lut> [cube_size]
 
 1. Reverse a LUT with default settings:
    ```bash
-   python lut_reverser.py input.cube output_reversed.cube
+   python lut_reverser.py input.cube
    ```
 
 2. Reverse a LUT with a custom cube size:
    ```bash
    python lut_reverser.py input.cube output_reversed.cube 64
-   ```
-
-3. Run the script without arguments (uses default filenames):
-   ```bash
-   python lut_reverser.py
    ```
 
 ## How It Works
