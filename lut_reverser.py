@@ -27,36 +27,69 @@ def reverse_lut(input_lut_path, output_lut_path, cube_size=33):
         config.setRole(ocio.ROLE_SCENE_LINEAR, raw_cs_name)
 
         # Define the forward transform (reading the LUT)
-        # We need the forward transform to define the 'to_reference' direction
-        # for our temporary color space. The baker will then invert this path.
         forward_transform = ocio.FileTransform(input_lut_path, interpolation=ocio.INTERP_LINEAR)
-        # Note: We don't set direction to inverse here. We define a space using the forward LUT.
 
-        # Create a temporary color space representing the output of the forward LUT
+        # Create a temporary color space
         temp_cs_name = "temp_lut_colorspace"
         temp_cs = ocio.ColorSpace(name=temp_cs_name)
-        temp_cs.setTransform(forward_transform, ocio.COLORSPACE_DIR_TO_REFERENCE) # Applies LUT going TO reference (raw)
+        # Set the transform FROM reference (raw) TO this space using the forward LUT
+        temp_cs.setTransform(forward_transform, ocio.COLORSPACE_DIR_FROM_REFERENCE)
         config.addColorSpace(temp_cs)
 
         # Create a Baker
         baker = ocio.Baker()
         baker.setConfig(config)
-        baker.setFormat("cinespace") # Format for .cube files
+        baker.setFormat("cinespace")
         baker.setCubeSize(cube_size)
 
         # Set the input space to the temporary space and target to the reference (raw/scene_linear).
-        # This tells the baker to generate a LUT that transforms FROM temp_cs TO raw,
-        # effectively reversing the original forward_transform.
+        # Baking FROM temp_cs TO raw will now generate the inverse of the forward_transform.
         baker.setInputSpace(temp_cs_name)
-        baker.setTargetSpace(ocio.ROLE_SCENE_LINEAR) # Use the role we just defined
+        baker.setTargetSpace(ocio.ROLE_SCENE_LINEAR)
 
-        # Bake the LUT to a string
-        # This will bake the inverse of the transform defined in temp_cs
-        baked_lut_string = baker.bake()
+        # Bake the LUT data using the cinespace format
+        baked_output_string = baker.bake()
 
-        # Write the baked LUT string to the output file
-        with open(output_lut_path, 'w') as f:
-            f.write(baked_lut_string)
+        # --- Filter the baked output to get only numerical data lines ---
+        numerical_data_lines = []
+        for line in baked_output_string.splitlines():
+            line = line.strip()
+            # Basic check: does the line contain roughly 3 space-separated numbers?
+            parts = line.split()
+            if len(parts) == 3:
+                try:
+                    # Attempt to convert to float to ensure they are numbers
+                    float(parts[0])
+                    float(parts[1])
+                    float(parts[2])
+                    numerical_data_lines.append(line)
+                except ValueError:
+                    # Line parts are not all numbers, skip
+                    continue
+        # Join the valid lines back together
+        cleaned_lut_data = "\n".join(numerical_data_lines)
+        # --- End Filtering ---
+
+        # Construct a minimal standard .cube header
+        input_filename_base = os.path.basename(input_lut_path)
+        title = f"Reversed - {input_filename_base}"
+        header = f"""TITLE "{title}"
+# Created by LUTReverser script
+
+LUT_3D_SIZE {cube_size}
+DOMAIN_MIN 0.0 0.0 0.0
+DOMAIN_MAX 1.0 1.0 1.0
+""" # Ends with a newline
+
+        # Write the header and the cleaned numerical data to the output file using CRLF line endings
+        with open(output_lut_path, 'w', newline='\r\n') as f:
+            f.write(header)
+            # Add the blank line separator if the header doesn't end with one (it does)
+            # f.write('\n') # Header already ends with \n
+            f.write(cleaned_lut_data)
+            # Ensure the file ends with a newline
+            if not cleaned_lut_data.endswith('\n'):
+                 f.write('\n')
 
         print(f"Successfully reversed LUT saved to: {output_lut_path}")
 
