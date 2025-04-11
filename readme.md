@@ -1,6 +1,6 @@
 # LUTReverser
 
-LUTReverser is a Python-based tool for reversing 3D LUT (Look-Up Table) files in `.cube` format. It uses the OpenColorIO library to process LUTs and generate reversed LUTs with customizable resolution.
+> **Disclaimer**: In most cases, applying a LUT irreversibly alters the original colors due to the lossy nature of LUT transformations. LUTs map input colors to output colors in a finite resolution grid, and intermediate values are interpolated. This process can result in loss of detail and color information, making a full and accurate reversal impossible. LUTReverser attempts to approximate the inverse transformation, but the results may not perfectly restore the original image.
 
 ## Features
 
