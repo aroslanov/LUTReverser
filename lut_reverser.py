@@ -103,8 +103,9 @@ def compute_roundtrip_error(forward_path, reversed_path, grid_size):
             rev_output.reshape(shape_4d))
 
 
-def generate_irreversibility_map(error_3d, grid_size, output_dir, lut_name):
-    """Generate grayscale PNG slices showing irreversibility across the LUT.
+def generate_irreversibility_map(error_3d, grid_size, output_dir, lut_name,
+                                 use_grayscale=False):
+    """Generate PNG slices showing irreversibility across the LUT.
 
     Creates one PNG per blue-channel slice, plus a max-projection summary
     image and an error histogram.
@@ -114,21 +115,25 @@ def generate_irreversibility_map(error_3d, grid_size, output_dir, lut_name):
         grid_size (int): The resolution of the LUT grid (N).
         output_dir (str): Directory to save the PNG files.
         lut_name (str): Base name of the LUT (used in filenames).
+        use_grayscale (bool): If True, use 'gray' colormap; otherwise 'inferno'.
     """
+    cmap = 'gray' if use_grayscale else 'inferno'
+    cmap_label = "Grayscale" if use_grayscale else "Color heatmap"
     os.makedirs(output_dir, exist_ok=True)
     global_max = float(np.max(error_3d))
     global_mean = float(np.mean(error_3d))
 
     print(f"  Error range: [{float(np.min(error_3d)):.6f}, {global_max:.6f}]")
     print(f"  Mean error:  {global_mean:.6f}")
+    print(f"  Colormap:    {cmap_label}")
 
-    # --- Per-blue-slice grayscale images ---
+    # --- Per-blue-slice images ---
     for b in range(grid_size):
         slice_data = error_3d[:, :, b]
         blue_val = b / (grid_size - 1)
 
         fig, ax = plt.subplots(figsize=(7, 6))
-        im = ax.imshow(slice_data, cmap='gray', vmin=0, vmax=global_max,
+        im = ax.imshow(slice_data, cmap=cmap, vmin=0, vmax=global_max,
                        origin='lower', aspect='equal', interpolation='nearest')
         cbar = plt.colorbar(im, ax=ax, label='Round-trip error (Euclidean)')
         cbar.ax.yaxis.label.set_color('white')
@@ -150,7 +155,7 @@ def generate_irreversibility_map(error_3d, grid_size, output_dir, lut_name):
     # --- Max-projection summary image ---
     max_proj = np.max(error_3d, axis=2)  # max across blue axis
     fig, ax = plt.subplots(figsize=(7, 6))
-    im = ax.imshow(max_proj, cmap='gray', vmin=0, vmax=global_max,
+    im = ax.imshow(max_proj, cmap=cmap, vmin=0, vmax=global_max,
                    origin='lower', aspect='equal', interpolation='nearest')
     cbar = plt.colorbar(im, ax=ax, label='Max round-trip error (Euclidean)')
     cbar.ax.yaxis.label.set_color('white')
@@ -289,19 +294,22 @@ DOMAIN_MAX 1.0 1.0 1.0
 if __name__ == "__main__":
     def print_usage():
         print("""
-Usage: python lut_reverser.py <input_lut> [output_lut] [cube_size] [--map [output_dir]]
+Usage: python lut_reverser.py <input_lut> [output_lut] [cube_size] [--map [output_dir]] [--grayscale]
 
 Arguments:
     input_lut       - Path to the input .cube LUT file
     output_lut      - (Optional) Path to save the reversed .cube LUT file
     cube_size       - (Optional) Resolution of the output LUT (default: 33)
-    --map [dir]     - (Optional) Generate a monochromatic irreversibility map.
-                      If dir is omitted, saves to '<input_name>_analysis/'.
+    --map [dir]     - (Optional) Generate an irreversibility map (color heatmap
+                      by default). If dir is omitted, saves to '<input_name>_analysis/'.
+    --grayscale     - (Optional) Use grayscale instead of color heatmap.
+                      Only meaningful with --map.
 
 Examples:
     python lut_reverser.py input.cube
     python lut_reverser.py input.cube output_reversed.cube 64
     python lut_reverser.py input.cube --map
+    python lut_reverser.py input.cube --map --grayscale
     python lut_reverser.py input.cube output.cube 64 --map analysis_dir
 """)
 
@@ -310,9 +318,16 @@ Examples:
     output_filename = None
     output_cube_size = None
     map_output_dir = None  # None means no map generation
+    use_grayscale = False
 
-    # Parse arguments, handling --map flag
+    # Parse arguments, handling --map and --grayscale flags
     args = sys.argv[1:]  # skip script name
+
+    # Check for --grayscale first (can appear anywhere)
+    if '--grayscale' in args:
+        use_grayscale = True
+        args.remove('--grayscale')
+
     # Check for --map and extract its value
     if '--map' in args:
         map_idx = args.index('--map')
@@ -403,7 +418,8 @@ Examples:
             )
             lut_name = os.path.splitext(os.path.basename(input_lut_path))[0]
             generate_irreversibility_map(error_3d, output_cube_size,
-                                         map_output_dir, lut_name)
+                                         map_output_dir, lut_name,
+                                         use_grayscale=use_grayscale)
             print("Irreversibility map generation complete.")
         except Exception as e:
             print(f"Error generating irreversibility map: {e}")
