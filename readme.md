@@ -7,11 +7,13 @@
 - Reverse `.cube` LUT files to create their inverse.
 - Automatically detect the LUT size from the input file or specify a custom size.
 - Generate a minimal `.cube` file with a standard header.
+- **Irreversibility map** — visualize where the LUT loses information using grayscale heatmaps (`--map` flag).
 
 ## Requirements
 
 - Python 3.6 or higher
 - [OpenColorIO](https://opencolorio.org/) library
+- [NumPy](https://numpy.org/) and [Matplotlib](https://matplotlib.org/) (for `--map` feature)
 - A `.cube` LUT file to process
 
 ## Installation
@@ -24,7 +26,7 @@
 
 2. Install the required dependencies:
    ```bash
-   pip install PyOpenColorIO
+   pip install -r requirements.txt
    ```
 
 3. Verify the installation by running the script:
@@ -39,12 +41,13 @@
 The script can be run from the command line with the following arguments:
 
 ```bash
-python lut_reverser.py <input_lut> <output_lut> [cube_size]
+python lut_reverser.py <input_lut> [output_lut] [cube_size] [--map [output_dir]]
 ```
 
 - `<input_lut>`: Path to the input `.cube` LUT file.
-- `<output_lut>`: Path to save the reversed `.cube` LUT file.
+- `[output_lut]` (optional): Path to save the reversed `.cube` LUT file. Defaults to `<input>_reversed.cube`.
 - `[cube_size]` (optional): Resolution of the output LUT. If not provided, the script will attempt to read the size from the input file or use the default size of 33.
+- `--map [output_dir]` (optional): After reversal, perform a round-trip error analysis and generate a **monochromatic irreversibility map** — a set of grayscale PNG images showing where the LUT loses information. If `output_dir` is omitted, images are saved to `<input_name>_analysis/`.
 
 ### Examples
 
@@ -58,12 +61,26 @@ python lut_reverser.py <input_lut> <output_lut> [cube_size]
    python lut_reverser.py input.cube output_reversed.cube 64
    ```
 
+3. Reverse a LUT and generate an irreversibility map:
+   ```bash
+   python lut_reverser.py input.cube --map
+   ```
+
+4. Reverse and save the map to a custom directory:
+   ```bash
+   python lut_reverser.py input.cube output.cube 64 --map my_analysis
+   ```
+
 ## How It Works
 
-1. **Input Validation**: The script checks if the input LUT file exists. If not, it creates a placeholder LUT if using the default filename.
+1. **Input Validation**: The script checks if the input LUT file exists.
 2. **LUT Size Detection**: Attempts to read the `LUT_3D_SIZE` from the input file. If unavailable, defaults to a size of 33.
 3. **Reversal Process**: Uses OpenColorIO to reverse the LUT and bake the output.
 4. **Output Generation**: Writes the reversed LUT to the specified output file with a standard `.cube` header.
+5. **Irreversibility Map** (`--map`): Performs a **round-trip error analysis** — for every grid point in the 3D LUT, it applies the forward LUT, then the reversed LUT, and measures the Euclidean distance between the original and the round-tripped value. The result is rendered as grayscale PNG images:
+   - **Slice images**: One per blue-channel level, showing error across the red-green plane.
+   - **Max-projection summary**: The maximum error across all blue slices.
+   - **Error histogram**: Distribution of all round-trip errors.
 
 ## Notes
 
